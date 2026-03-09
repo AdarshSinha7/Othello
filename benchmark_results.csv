@@ -1,0 +1,99 @@
+suite,matchup,game_number,black_config,white_config,winner,black_discs,white_discs,total_moves,black_nodes,white_nodes,black_time_ms,white_time_ms
+A,d2 vs d4,1,d2,d4,White,18,46,60,1097,23705,1,66
+A,d2 vs d4,2,d4,d2,White,30,34,60,26421,1029,65,0
+A,d2 vs d4,3,d2,d4,White,18,46,60,1097,23705,0,57
+A,d2 vs d4,4,d4,d2,White,30,34,60,26421,1029,51,0
+A,d2 vs d4,5,d2,d4,White,18,46,60,1097,23705,0,42
+A,d2 vs d4,6,d4,d2,White,30,34,60,26421,1029,50,0
+A,d2 vs d4,7,d2,d4,White,18,46,60,1097,23705,0,42
+A,d2 vs d4,8,d4,d2,White,30,34,60,26421,1029,51,0
+A,d2 vs d4,9,d2,d4,White,18,46,60,1097,23705,0,42
+A,d2 vs d4,10,d4,d2,White,30,34,60,26421,1029,49,0
+A,d2 vs d6,1,d2,d6,White,5,57,58,1055,336841,0,807
+A,d2 vs d6,2,d6,d2,Black,46,18,60,261303,969,572,0
+A,d2 vs d6,3,d2,d6,White,5,57,58,1055,336841,0,808
+A,d2 vs d6,4,d6,d2,Black,46,18,60,261303,969,578,0
+A,d2 vs d6,5,d2,d6,White,5,57,58,1055,336841,0,829
+A,d2 vs d6,6,d6,d2,Black,46,18,60,261303,969,624,0
+A,d2 vs d6,7,d2,d6,White,5,57,58,1055,336841,0,913
+A,d2 vs d6,8,d6,d2,Black,46,18,60,261303,969,581,0
+A,d2 vs d6,9,d2,d6,White,5,57,58,1055,336841,0,819
+A,d2 vs d6,10,d6,d2,Black,46,18,60,261303,969,586,0
+A,d2 vs d8,1,d2,d8,White,11,53,60,867,11425566,0,29072
+A,d2 vs d8,2,d8,d2,Black,59,5,60,11123289,783,27761,0
+A,d2 vs d8,3,d2,d8,White,11,53,60,867,11425566,0,29174
+A,d2 vs d8,4,d8,d2,Black,59,5,60,11123289,783,27766,0
+A,d2 vs d8,5,d2,d8,White,11,53,60,867,11425566,0,29240
+A,d2 vs d8,6,d8,d2,Black,59,5,60,11123289,783,27841,0
+A,d2 vs d8,7,d2,d8,White,11,53,60,867,11425566,0,29143
+A,d2 vs d8,8,d8,d2,Black,59,5,60,11123289,783,27947,0
+A,d2 vs d8,9,d2,d8,White,11,53,60,867,11425566,0,29196
+A,d2 vs d8,10,d8,d2,Black,59,5,60,11123289,783,28014,0
+A,d4 vs d6,1,d4,d6,White,11,53,60,17472,298925,30,702
+A,d4 vs d6,2,d6,d4,Black,41,23,60,393465,21758,957,38
+A,d4 vs d6,3,d4,d6,White,11,53,60,17472,298925,30,702
+A,d4 vs d6,4,d6,d4,Black,41,23,60,393465,21758,966,39
+A,d4 vs d6,5,d4,d6,White,11,53,60,17472,298925,30,702
+A,d4 vs d6,6,d6,d4,Black,41,23,60,393465,21758,959,38
+A,d4 vs d6,7,d4,d6,White,11,53,60,17472,298925,30,702
+A,d4 vs d6,8,d6,d4,Black,41,23,60,393465,21758,962,39
+A,d4 vs d6,9,d4,d6,White,11,53,60,17472,298925,31,699
+A,d4 vs d6,10,d6,d4,Black,41,23,60,393465,21758,960,40
+A,d4 vs d8,1,d4,d8,White,12,52,60,16240,2513329,29,5495
+A,d4 vs d8,2,d8,d4,Black,52,12,60,7724487,25253,18513,52
+A,d4 vs d8,3,d4,d8,White,12,52,60,16240,2513329,30,5519
+A,d4 vs d8,4,d8,d4,Black,52,12,60,7724487,25253,18588,53
+A,d4 vs d8,5,d4,d8,White,12,52,60,16240,2513329,30,5501
+A,d4 vs d8,6,d8,d4,Black,52,12,60,7724487,25253,18492,50
+A,d4 vs d8,7,d4,d8,White,12,52,60,16240,2513329,30,5552
+A,d4 vs d8,8,d8,d4,Black,52,12,60,7724487,25253,18824,52
+A,d4 vs d8,9,d4,d8,White,12,52,60,16240,2513329,31,5531
+A,d4 vs d8,10,d8,d4,Black,52,12,60,7724487,25253,18563,51
+A,d6 vs d8,1,d6,d8,White,18,46,60,320568,4606441,797,10521
+A,d6 vs d8,2,d8,d6,Black,44,20,60,3918888,280947,9012,702
+A,d6 vs d8,3,d6,d8,White,18,46,60,320568,4606441,808,10692
+A,d6 vs d8,4,d8,d6,Black,44,20,60,3918888,280947,9105,706
+A,d6 vs d8,5,d6,d8,White,18,46,60,320568,4606441,795,10584
+A,d6 vs d8,6,d8,d6,Black,44,20,60,3918888,280947,9259,716
+A,d6 vs d8,7,d6,d8,White,18,46,60,320568,4606441,830,11040
+A,d6 vs d8,8,d8,d6,Black,44,20,60,3918888,280947,9361,733
+A,d6 vs d8,9,d6,d8,White,18,46,60,320568,4606441,794,10538
+A,d6 vs d8,10,d8,d6,Black,44,20,60,3918888,280947,9039,705
+B,Simple vs Mobility,1,Simple,Mobility,White,13,49,58,125553,207537,109,297
+B,Simple vs Mobility,2,Mobility,Simple,Black,60,0,56,126080,95685,184,82
+B,Simple vs Mobility,3,Simple,Mobility,White,13,49,58,125553,207537,107,298
+B,Simple vs Mobility,4,Mobility,Simple,Black,60,0,56,126080,95685,189,81
+B,Simple vs Mobility,5,Simple,Mobility,White,13,49,58,125553,207537,107,295
+B,Simple vs Mobility,6,Mobility,Simple,Black,60,0,56,126080,95685,184,80
+B,Simple vs Mobility,7,Simple,Mobility,White,13,49,58,125553,207537,106,296
+B,Simple vs Mobility,8,Mobility,Simple,Black,60,0,56,126080,95685,185,80
+B,Simple vs Mobility,9,Simple,Mobility,White,13,49,58,125553,207537,108,298
+B,Simple vs Mobility,10,Mobility,Simple,Black,60,0,56,126080,95685,207,86
+B,Simple vs Full,1,Simple,Full,White,2,60,58,234035,235449,253,559
+B,Simple vs Full,2,Full,Simple,Black,48,16,60,183657,193284,418,185
+B,Simple vs Full,3,Simple,Full,White,2,60,58,234035,235449,219,502
+B,Simple vs Full,4,Full,Simple,Black,48,16,60,183657,193284,430,195
+B,Simple vs Full,5,Simple,Full,White,2,60,58,234035,235449,233,508
+B,Simple vs Full,6,Full,Simple,Black,48,16,60,183657,193284,406,177
+B,Simple vs Full,7,Simple,Full,White,2,60,58,234035,235449,228,511
+B,Simple vs Full,8,Full,Simple,Black,48,16,60,183657,193284,392,174
+B,Simple vs Full,9,Simple,Full,White,2,60,58,234035,235449,220,505
+B,Simple vs Full,10,Full,Simple,Black,48,16,60,183657,193284,390,169
+B,Mobility vs Full,1,Mobility,Full,White,0,63,59,133930,99683,238,205
+B,Mobility vs Full,2,Full,Mobility,Black,36,28,60,439406,314268,1028,502
+B,Mobility vs Full,3,Mobility,Full,White,0,63,59,133930,99683,235,207
+B,Mobility vs Full,4,Full,Mobility,Black,36,28,60,439406,314268,1020,502
+B,Mobility vs Full,5,Mobility,Full,White,0,63,59,133930,99683,236,214
+B,Mobility vs Full,6,Full,Mobility,Black,36,28,60,439406,314268,1027,523
+B,Mobility vs Full,7,Mobility,Full,White,0,63,59,133930,99683,236,207
+B,Mobility vs Full,8,Full,Mobility,Black,36,28,60,439406,314268,1036,522
+B,Mobility vs Full,9,Mobility,Full,White,0,63,59,133930,99683,239,208
+B,Mobility vs Full,10,Full,Mobility,Black,36,28,60,439406,314268,1012,501
+C,AB_vs_noAB_d2,1,AB,noAB,Black,47,17,60,1079,2179,0,0
+C,AB_vs_noAB_d2,2,noAB,AB,Black,47,17,60,2431,1055,0,0
+C,AB_vs_noAB_d4,1,AB,noAB,Black,33,31,60,22014,322249,44,845
+C,AB_vs_noAB_d4,2,noAB,AB,Black,33,31,60,298627,19594,791,37
+C,AB_vs_noAB_d6,1,AB,noAB,Black,37,27,60,521884,48752749,1325,127049
+C,AB_vs_noAB_d6,2,noAB,AB,Black,37,27,60,43630900,338155,116803,803
+D,MO_vs_noMO_d6,1,MO,noMO,Black,37,27,60,521845,700958,1328,1617
+D,MO_vs_noMO_d6,2,noMO,MO,Black,37,27,60,952795,338155,2341,793
