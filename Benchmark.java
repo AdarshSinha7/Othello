@@ -128,4 +128,75 @@ public class Benchmark {
         return new GameResult(winner, bDiscs, wDiscs, totalMoves,
                               blackNodes, whiteNodes, blackTimeMs, whiteTimeMs);
     }
+
+    /**
+     * Plays a game where one or both players use iterative deepening.
+     * Each player uses iterative deepening if its timeLimitMs is > 0,
+     * otherwise uses fixed-depth search.
+     *
+     * @param black          the AI playing as black
+     * @param white          the AI playing as white
+     * @param blackTimeLimitMs time budget per move for black (0 = fixed depth)
+     * @param whiteTimeLimitMs time budget per move for white (0 = fixed depth)
+     * @return the game result with all statistics
+     */
+    public static GameResult playGameIterativeDeepening(
+            ConfigurableAIPlayer black, ConfigurableAIPlayer white,
+            long blackTimeLimitMs, long whiteTimeLimitMs) {
+
+        Board board = new Board();
+        int currentPlayer = Board.BLACK;
+        int totalMoves = 0;
+        long blackNodes = 0, whiteNodes = 0;
+        long blackTimeMs = 0, whiteTimeMs = 0;
+
+        while (!board.isGameOver()) {
+            List<Move> moves = board.getValidMoves(currentPlayer);
+            if (moves.isEmpty()) {
+                currentPlayer = Board.opponent(currentPlayer);
+                continue;
+            }
+
+            ConfigurableAIPlayer player = (currentPlayer == Board.BLACK) ? black : white;
+            long timeLimitMs = (currentPlayer == Board.BLACK) ? blackTimeLimitMs : whiteTimeLimitMs;
+
+            long startNano = System.nanoTime();
+            Move move;
+            long nodes;
+
+            if (timeLimitMs > 0) {
+                move = player.getBestMoveIterativeDeepening(board, timeLimitMs);
+                nodes = player.getTotalNodesExplored();
+            } else {
+                move = player.getBestMove(board);
+                nodes = player.getNodesExplored();
+            }
+
+            long elapsedMs = (System.nanoTime() - startNano) / 1_000_000;
+
+            if (move != null) {
+                board.makeMove(move, currentPlayer);
+                totalMoves++;
+                if (currentPlayer == Board.BLACK) {
+                    blackNodes += nodes;
+                    blackTimeMs += elapsedMs;
+                } else {
+                    whiteNodes += nodes;
+                    whiteTimeMs += elapsedMs;
+                }
+            }
+
+            currentPlayer = Board.opponent(currentPlayer);
+        }
+
+        int bDiscs = board.countDiscs(Board.BLACK);
+        int wDiscs = board.countDiscs(Board.WHITE);
+        int winner;
+        if (bDiscs > wDiscs) winner = Board.BLACK;
+        else if (wDiscs > bDiscs) winner = Board.WHITE;
+        else winner = Board.EMPTY;
+
+        return new GameResult(winner, bDiscs, wDiscs, totalMoves,
+                              blackNodes, whiteNodes, blackTimeMs, whiteTimeMs);
+    }
 }

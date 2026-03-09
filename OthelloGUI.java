@@ -53,7 +53,13 @@ public class OthelloGUI extends JFrame {
     private JTextArea historyArea;
     private JSpinner depthSpinner;
     private JLabel aiStatsLabel;
+    private JCheckBox idCheckbox;
+    private JComboBox<String> timeLimitCombo;
+    private JLabel depthLabelRef;
     private int moveNumber;
+
+    /** Time limit options in milliseconds, matching the combo box entries */
+    private static final long[] TIME_LIMITS_MS = {1000, 2000, 5000, 10000};
 
     /**
      * Creates and displays the Othello GUI.
@@ -203,18 +209,49 @@ public class OthelloGUI extends JFrame {
         // Depth selector
         JPanel depthRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 2));
         depthRow.setOpaque(false);
-        JLabel depthLabel = new JLabel("AI Depth:");
-        depthLabel.setForeground(TEXT_PRIMARY);
-        depthLabel.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        depthLabelRef = new JLabel("AI Depth:");
+        depthLabelRef.setForeground(TEXT_PRIMARY);
+        depthLabelRef.setFont(new Font("SansSerif", Font.PLAIN, 13));
         depthSpinner = new JSpinner(new SpinnerNumberModel(6, 1, 12, 1));
         depthSpinner.setPreferredSize(new Dimension(55, 26));
         depthSpinner.addChangeListener(e -> {
             int d = (int) depthSpinner.getValue();
             ai.setSearchDepth(d);
         });
-        depthRow.add(depthLabel);
+        depthRow.add(depthLabelRef);
         depthRow.add(depthSpinner);
         controls.add(depthRow);
+
+        // Time limit selector (shown when iterative deepening is on)
+        JPanel timeRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 2));
+        timeRow.setOpaque(false);
+        JLabel timeLabel = new JLabel("Time limit:");
+        timeLabel.setForeground(TEXT_PRIMARY);
+        timeLabel.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        timeLimitCombo = new JComboBox<>(new String[]{"1 s", "2 s", "5 s", "10 s"});
+        timeLimitCombo.setSelectedIndex(1); // default 2s
+        timeLimitCombo.setPreferredSize(new Dimension(65, 26));
+        timeRow.add(timeLabel);
+        timeRow.add(timeLimitCombo);
+        timeRow.setVisible(false); // hidden by default
+        controls.add(timeRow);
+
+        // Iterative deepening checkbox
+        JPanel idRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        idRow.setOpaque(false);
+        idCheckbox = new JCheckBox("Iterative Deepening");
+        idCheckbox.setForeground(TEXT_PRIMARY);
+        idCheckbox.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        idCheckbox.setOpaque(false);
+        idCheckbox.setFocusPainted(false);
+        idCheckbox.addActionListener(e -> {
+            boolean on = idCheckbox.isSelected();
+            depthRow.setVisible(!on);
+            timeRow.setVisible(on);
+            controls.revalidate();
+        });
+        idRow.add(idCheckbox);
+        controls.add(idRow);
 
         controls.add(Box.createVerticalStrut(6));
 
@@ -393,20 +430,32 @@ public class OthelloGUI extends JFrame {
 
     /**
      * Runs the AI move computation on a background thread using SwingWorker
-     * to keep the UI responsive.
+     * to keep the UI responsive. Uses iterative deepening when enabled.
      */
     private void triggerAIMove() {
+        final boolean useID = idCheckbox != null && idCheckbox.isSelected();
+        final long timeBudgetMs = useID ? TIME_LIMITS_MS[timeLimitCombo.getSelectedIndex()] : 0;
+
         SwingWorker<Move, Void> worker = new SwingWorker<>() {
-            long startTime;
             long nodesExplored;
             int depth;
+            double seconds;
 
             @Override
             protected Move doInBackground() {
-                startTime = System.nanoTime();
-                Move move = ai.getBestMove(board);
-                nodesExplored = ai.getNodesExplored();
-                depth = ai.getSearchDepth();
+                Move move;
+                if (useID) {
+                    move = ai.getBestMoveIterativeDeepening(board, timeBudgetMs);
+                    nodesExplored = ai.getTotalNodesExplored();
+                    depth = ai.getDepthReached();
+                    seconds = ai.getTotalTimeMs() / 1000.0;
+                } else {
+                    long startTime = System.nanoTime();
+                    move = ai.getBestMove(board);
+                    nodesExplored = ai.getNodesExplored();
+                    depth = ai.getSearchDepth();
+                    seconds = (System.nanoTime() - startTime) / 1_000_000_000.0;
+                }
                 return move;
             }
 
@@ -414,8 +463,6 @@ public class OthelloGUI extends JFrame {
             protected void done() {
                 try {
                     Move move = get();
-                    long elapsed = System.nanoTime() - startTime;
-                    double seconds = elapsed / 1_000_000_000.0;
 
                     if (move != null) {
                         int flipped = board.makeMove(move, Board.WHITE);
@@ -424,15 +471,15 @@ public class OthelloGUI extends JFrame {
                         appendHistory(moveNumber + ". W " + move + " (+" + flipped + ")");
                         updateScoreLabels();
 
-                        // Update AI stats
+                        String modeLabel = useID ? "ID depth" : "Depth";
                         aiStatsLabel.setText(String.format(
                             "<html>" +
                             "Time: %.3f s<br>" +
                             "Nodes: %,d<br>" +
-                            "Depth: %d<br>" +
+                            "%s: %d<br>" +
                             "Move: %s" +
                             "</html>",
-                            seconds, nodesExplored, depth, move
+                            seconds, nodesExplored, modeLabel, depth, move
                         ));
                     }
 

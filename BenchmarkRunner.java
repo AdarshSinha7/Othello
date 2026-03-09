@@ -14,6 +14,7 @@ import java.util.List;
  *   <li>B — Evaluation function comparison (Simple/Mobility/Full at depth 6)</li>
  *   <li>C — Alpha-beta pruning benefit</li>
  *   <li>D — Move ordering benefit</li>
+ *   <li>E — Iterative deepening vs fixed depth</li>
  * </ul>
  *
  * <p>Run with: {@code java BenchmarkRunner}</p>
@@ -31,7 +32,7 @@ public class BenchmarkRunner {
     // ════════════════════════════════════════════════════════════════
 
     /**
-     * Entry point. Runs all four benchmark suites sequentially.
+     * Entry point. Runs all five benchmark suites sequentially.
      *
      * @param args not used
      */
@@ -44,6 +45,7 @@ public class BenchmarkRunner {
         suiteB();
         suiteC();
         suiteD();
+        suiteE();
 
         writeCsv();
 
@@ -375,6 +377,143 @@ public class BenchmarkRunner {
 
         double reduction = noMoAvgNodes > 0 ? 100.0 * (1.0 - (double) moAvgNodes / noMoAvgNodes) : 0;
         System.out.printf("%nNode reduction with move ordering: %.1f%%%n", reduction);
+        System.out.println();
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    //  SUITE E — Iterative Deepening vs Fixed Depth
+    // ════════════════════════════════════════════════════════════════
+
+    /**
+     * Suite E: Compares iterative deepening vs fixed-depth search.
+     * For depths 4, 6, and 8: runs fixed-depth games to measure average time per move,
+     * then runs iterative deepening with that same time budget. Finally runs head-to-head
+     * matches. 4 games per matchup (2 as black, 2 as white).
+     */
+    private static void suiteE() {
+        System.out.println("──────────────────────────────────────────────────────");
+        System.out.println("  SUITE E: Iterative Deepening vs Fixed Depth");
+        System.out.println("──────────────────────────────────────────────────────");
+
+        int[] depths = {4, 6, 8};
+        int gamesPerConfig = 4;
+
+        System.out.printf("%n%-8s %12s %14s %14s %14s %10s%n",
+                "Depth", "Mode", "Avg Time/mv", "Avg Nodes/mv", "Avg Depth", "Wins");
+        System.out.println("─".repeat(76));
+
+        for (int depth : depths) {
+            System.out.printf("%n  --- Depth %d ---%n", depth);
+
+            // Step 1: Run fixed-depth games to measure average time per move
+            System.out.println("  Running fixed-depth calibration games...");
+            long fixedNodesTotal = 0, fixedTimeTotal = 0;
+            int fixedMoveCount = 0;
+            int fixedWins = 0;
+
+            for (int g = 0; g < gamesPerConfig; g++) {
+                System.out.printf("    Fixed-depth game %d/%d...%n", g + 1, gamesPerConfig);
+
+                ConfigurableAIPlayer black = new ConfigurableAIPlayer(
+                    Board.BLACK, depth, new FullEval(), true, true);
+                ConfigurableAIPlayer white = new ConfigurableAIPlayer(
+                    Board.WHITE, depth, new FullEval(), true, true);
+
+                // Alternate who we track: even games track black, odd track white
+                Benchmark.GameResult result = Benchmark.playGame(black, white);
+
+                // Accumulate stats from both sides
+                fixedNodesTotal += result.blackNodesTotal + result.whiteNodesTotal;
+                fixedTimeTotal += result.blackTimeMs + result.whiteTimeMs;
+                fixedMoveCount += result.totalMoves;
+
+                addCsvRow("E", "fixed_d" + depth + "_calibration", g + 1,
+                          "fixed_d" + depth, "fixed_d" + depth, result);
+            }
+
+            long avgTimePerMoveMs = fixedMoveCount > 0 ? fixedTimeTotal / fixedMoveCount : 100;
+            long avgNodesPerMove = fixedMoveCount > 0 ? fixedNodesTotal / fixedMoveCount : 0;
+            // Ensure at least 50ms budget for ID
+            long timeBudgetMs = Math.max(avgTimePerMoveMs, 50);
+
+            System.out.printf("  Fixed-depth avg time/move: %d ms (using as ID budget)%n", timeBudgetMs);
+
+            // Step 2: Run iterative deepening games with the same time budget
+            System.out.println("  Running iterative deepening games...");
+            long idNodesTotal = 0, idTimeTotal = 0;
+            int idMoveCount = 0;
+            long idDepthSum = 0;
+
+            for (int g = 0; g < gamesPerConfig; g++) {
+                System.out.printf("    ID game %d/%d...%n", g + 1, gamesPerConfig);
+
+                ConfigurableAIPlayer black = new ConfigurableAIPlayer(
+                    Board.BLACK, depth, new FullEval(), true, true);
+                ConfigurableAIPlayer white = new ConfigurableAIPlayer(
+                    Board.WHITE, depth, new FullEval(), true, true);
+
+                Benchmark.GameResult result = Benchmark.playGameIterativeDeepening(
+                    black, white, timeBudgetMs, timeBudgetMs);
+
+                idNodesTotal += result.blackNodesTotal + result.whiteNodesTotal;
+                idTimeTotal += result.blackTimeMs + result.whiteTimeMs;
+                idMoveCount += result.totalMoves;
+
+                addCsvRow("E", "ID_t" + timeBudgetMs + "ms_calibration", g + 1,
+                          "ID_t" + timeBudgetMs + "ms", "ID_t" + timeBudgetMs + "ms", result);
+            }
+
+            long idAvgNodes = idMoveCount > 0 ? idNodesTotal / idMoveCount : 0;
+            long idAvgTime = idMoveCount > 0 ? idTimeTotal / idMoveCount : 0;
+
+            System.out.printf("d%-7d %12s %11d ms %,14d %14s %10s%n",
+                    depth, "Fixed", avgTimePerMoveMs, avgNodesPerMove, depth, "-");
+            System.out.printf("d%-7d %12s %11d ms %,14d %14s %10s%n",
+                    depth, "ID", idAvgTime, idAvgNodes, "varies", "-");
+
+            // Step 3: Head-to-head — fixed depth vs iterative deepening
+            System.out.println("  Running head-to-head matches...");
+            int fixedH2HWins = 0, idH2HWins = 0, h2hDraws = 0;
+
+            for (int g = 0; g < gamesPerConfig; g++) {
+                System.out.printf("    H2H game %d/%d...", g + 1, gamesPerConfig);
+
+                ConfigurableAIPlayer fixedPlayer = new ConfigurableAIPlayer(
+                    g % 2 == 0 ? Board.BLACK : Board.WHITE, depth, new FullEval(), true, true);
+                ConfigurableAIPlayer idPlayer = new ConfigurableAIPlayer(
+                    g % 2 == 0 ? Board.WHITE : Board.BLACK, depth, new FullEval(), true, true);
+
+                ConfigurableAIPlayer blackP = (g % 2 == 0) ? fixedPlayer : idPlayer;
+                ConfigurableAIPlayer whiteP = (g % 2 == 0) ? idPlayer : fixedPlayer;
+                long blackTimeLimit = (g % 2 == 0) ? 0 : timeBudgetMs;
+                long whiteTimeLimit = (g % 2 == 0) ? timeBudgetMs : 0;
+
+                Benchmark.GameResult result = Benchmark.playGameIterativeDeepening(
+                    blackP, whiteP, blackTimeLimit, whiteTimeLimit);
+
+                // Determine which player won
+                String fixedColor = (g % 2 == 0) ? "Black" : "White";
+                String idColor = (g % 2 == 0) ? "White" : "Black";
+                boolean fixedWon = (g % 2 == 0 && result.winner == Board.BLACK)
+                                || (g % 2 != 0 && result.winner == Board.WHITE);
+                boolean idWon = (g % 2 == 0 && result.winner == Board.WHITE)
+                             || (g % 2 != 0 && result.winner == Board.BLACK);
+
+                if (fixedWon) fixedH2HWins++;
+                else if (idWon) idH2HWins++;
+                else h2hDraws++;
+
+                System.out.printf(" %s (B:%d W:%d)%n", result.winnerString(),
+                        result.blackDiscs, result.whiteDiscs);
+
+                String bCfg = (g % 2 == 0) ? "fixed_d" + depth : "ID_t" + timeBudgetMs + "ms";
+                String wCfg = (g % 2 == 0) ? "ID_t" + timeBudgetMs + "ms" : "fixed_d" + depth;
+                addCsvRow("E", "H2H_d" + depth, g + 1, bCfg, wCfg, result);
+            }
+
+            System.out.printf("  Head-to-head (d%d): Fixed wins %d, ID wins %d, Draws %d%n",
+                    depth, fixedH2HWins, idH2HWins, h2hDraws);
+        }
         System.out.println();
     }
 

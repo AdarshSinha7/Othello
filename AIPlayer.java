@@ -6,6 +6,9 @@ import java.util.Comparator;
  * AI opponent for Othello using minimax search with alpha-beta pruning.
  * The evaluation function considers disc parity, mobility, corner occupancy,
  * stability, and edge control, with weights that shift by game phase.
+ *
+ * <p>Supports both fixed-depth search ({@link #getBestMove}) and
+ * iterative deepening with a time budget ({@link #getBestMoveIterativeDeepening}).</p>
  */
 public class AIPlayer {
 
@@ -20,6 +23,33 @@ public class AIPlayer {
 
     /** Counter for nodes explored during a single search */
     private long nodesExplored;
+
+    // ── Iterative deepening state ──────────────────────────────────
+    /** Depth actually reached by the last iterative deepening search */
+    private int depthReached;
+
+    /** Total nodes explored across all iterations of the last ID search */
+    private long totalNodesExplored;
+
+    /** Total time in milliseconds for the last ID search */
+    private long totalTimeMs;
+
+    /** Search start time (nanos) for timeout checks — only used by timed search */
+    private long searchStartNano;
+
+    /** Time limit in nanos — only used by timed search */
+    private long timeLimitNano;
+
+    /** Whether a timed search is active (guards timeout checks) */
+    private boolean timedSearchActive;
+
+    /**
+     * Thrown internally when a timed search exceeds its time budget.
+     * Never escapes public API boundaries.
+     */
+    private static class SearchTimeoutException extends RuntimeException {
+        SearchTimeoutException() { super("search timeout"); }
+    }
 
     /**
      * Positional weight table reflecting strategic value of each cell.
@@ -56,10 +86,11 @@ public class AIPlayer {
         this.color = color;
         this.searchDepth = depth;
         this.nodesExplored = 0;
+        this.timedSearchActive = false;
     }
 
     /**
-     * Returns the number of nodes explored in the last search.
+     * Returns the number of nodes explored in the last fixed-depth search.
      *
      * @return nodes explored count
      */
@@ -68,7 +99,7 @@ public class AIPlayer {
     }
 
     /**
-     * Returns the current search depth.
+     * Returns the current search depth setting.
      *
      * @return the search depth
      */
@@ -88,15 +119,44 @@ public class AIPlayer {
     }
 
     /**
-     * Selects the best move for the AI using minimax with alpha-beta pruning.
-     * Moves are ordered to improve pruning efficiency: corners first, then
-     * edges, then interior moves (avoiding X/C-squares when possible).
+     * Returns the depth actually reached by the last iterative deepening search.
+     *
+     * @return the depth of the last fully completed iteration
+     */
+    public int getDepthReached() {
+        return depthReached;
+    }
+
+    /**
+     * Returns the total nodes explored across all iterations of the last
+     * iterative deepening search.
+     *
+     * @return total nodes explored
+     */
+    public long getTotalNodesExplored() {
+        return totalNodesExplored;
+    }
+
+    /**
+     * Returns the total wall-clock time in milliseconds for the last
+     * iterative deepening search.
+     *
+     * @return total search time in ms
+     */
+    public long getTotalTimeMs() {
+        return totalTimeMs;
+    }
+
+    /**
+     * Selects the best move for the AI using minimax with alpha-beta pruning
+     * at a fixed depth. This method is NOT affected by any timeout mechanism.
      *
      * @param board the current board state
      * @return the best move found, or null if no legal move exists
      */
     public Move getBestMove(Board board) {
         nodesExplored = 0;
+        timedSearchActive = false;
         List<Move> validMoves = board.getValidMoves(color);
         if (validMoves.isEmpty()) return null;
 
@@ -124,7 +184,87 @@ public class AIPlayer {
     }
 
     /**
+     * Selects the best move using iterative deepening with a time budget.
+     * Searches at depth 1, then 2, then 3, etc. After each fully completed
+     * depth, checks whether time remains. If time runs out mid-search during
+     * a deeper iteration, that incomplete result is discarded and the best
+     * move from the last fully completed depth is returned.
+     *
+     * <p>The best move from the previous depth is tried first at the next
+     * depth to maximize alpha-beta cutoffs.</p>
+     *
+     * @param board       the current board state
+     * @param timeLimitMs the time budget in milliseconds
+     * @return the best move found, or null if no legal move exists
+     */
+    public Move getBestMoveIterativeDeepening(Board board, long timeLimitMs) {
+        List<Move> validMoves = board.getValidMoves(color);
+        if (validMoves.isEmpty()) return null;
+
+        searchStartNano = System.nanoTime();
+        timeLimitNano = timeLimitMs * 1_000_000L;
+        totalNodesExplored = 0;
+        depthReached = 0;
+
+        // Initial move ordering by positional weight
+        validMoves.sort(Comparator.comparingInt(
+            (Move m) -> POSITION_WEIGHTS[m.row][m.col]).reversed());
+
+        Move overallBestMove = validMoves.get(0);
+
+        for (int depth = 1; depth <= 64; depth++) {
+            // Check if we have time to start a new iteration
+            if (System.nanoTime() - searchStartNano >= timeLimitNano) break;
+
+            nodesExplored = 0;
+            timedSearchActive = true;
+
+            try {
+                Move bestMoveThisDepth = validMoves.get(0);
+                int bestScore = Integer.MIN_VALUE;
+                int alpha = Integer.MIN_VALUE;
+                int beta = Integer.MAX_VALUE;
+
+                for (Move move : validMoves) {
+                    Board child = new Board(board);
+                    child.makeMove(move, color);
+                    int score = minimax(child, depth - 1, alpha, beta, false);
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestMoveThisDepth = move;
+                    }
+                    alpha = Math.max(alpha, bestScore);
+                }
+
+                // Depth completed successfully
+                overallBestMove = bestMoveThisDepth;
+                depthReached = depth;
+                totalNodesExplored += nodesExplored;
+
+                // Reorder moves: put the best move first for the next iteration
+                final Move bestForReorder = bestMoveThisDepth;
+                validMoves.sort((a, b) -> {
+                    if (a.equals(bestForReorder)) return -1;
+                    if (b.equals(bestForReorder)) return 1;
+                    return Integer.compare(POSITION_WEIGHTS[b.row][b.col],
+                                           POSITION_WEIGHTS[a.row][a.col]);
+                });
+
+            } catch (SearchTimeoutException e) {
+                // Incomplete depth — discard, keep previous result
+                totalNodesExplored += nodesExplored;
+                break;
+            }
+        }
+
+        timedSearchActive = false;
+        totalTimeMs = (System.nanoTime() - searchStartNano) / 1_000_000;
+        return overallBestMove;
+    }
+
+    /**
      * Minimax algorithm with alpha-beta pruning.
+     * When called during a timed search, checks for timeout at each node.
      *
      * @param board          the current board state
      * @param depth          remaining search depth
@@ -132,9 +272,17 @@ public class AIPlayer {
      * @param beta           the beta bound (best score for minimizer)
      * @param isMaximizing   true if this is the maximizing player's turn
      * @return the evaluated score of the board position
+     * @throws SearchTimeoutException if a timed search exceeds its budget
      */
     private int minimax(Board board, int depth, int alpha, int beta, boolean isMaximizing) {
         nodesExplored++;
+
+        // Timeout check — only active during iterative deepening
+        if (timedSearchActive && (nodesExplored & 1023) == 0) {
+            if (System.nanoTime() - searchStartNano >= timeLimitNano) {
+                throw new SearchTimeoutException();
+            }
+        }
 
         if (depth == 0 || board.isGameOver()) {
             return evaluate(board);
